@@ -119,6 +119,7 @@ def generate_time_ablation_plot(
 
     offsets = [r["offset"] for r in results]
     pass_k_values = [r["pass_k"] for r in results]
+    avg_reward_values = [np.mean(r["trial_avg_rewards"]) for r in results]
 
     # Use sequential x-positions for even spacing (avoids extreme scale issues)
     x_positions = list(range(len(offsets)))
@@ -131,11 +132,23 @@ def generate_time_ablation_plot(
         for trial_idx, avg in enumerate(r["trial_avg_rewards"]):
             jitter = (trial_idx - 1) * 0.15
             ax.scatter(
-                x_positions[i] + jitter, avg, alpha=0.5, s=40, c="steelblue", zorder=3
+                x_positions[i] + jitter, avg, alpha=0.4, s=30, c="steelblue", zorder=3
             )
 
     # Add one label for legend
-    ax.scatter([], [], alpha=0.5, s=40, c="steelblue", label="Trial Avg")
+    ax.scatter([], [], alpha=0.4, s=30, c="steelblue", label="Per-Trial Avg")
+
+    # Plot average reward line
+    ax.plot(
+        x_positions,
+        avg_reward_values,
+        "s-",
+        color="steelblue",
+        linewidth=2,
+        markersize=7,
+        label="Avg Reward (%)",
+        zorder=4,
+    )
 
     # Plot Pass^3 line
     ax.plot(
