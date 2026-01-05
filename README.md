@@ -80,7 +80,7 @@ The airline domain includes:
 <details>
 <summary><strong>Task 32: The Smoking Gun (0% baseline, 100% everywhere else)</strong></summary>
 
-This task shows the most dramatic offset effect. The user needs to change a flight from Newark to a nonstop option due to a family emergency.
+This task shows the most dramatic offset effect. The user has a **basic economy** ticket and needs to change their flight due to a family emergency. Per policy, basic economy flights cannot be modified—but there's a **policy-compliant workaround**: upgrade the cabin first, then change the flight.
 
 | Offset | Year | Pass Rate |
 |--------|------|-----------|
@@ -88,15 +88,24 @@ This task shows the most dramatic offset effect. The user needs to change a flig
 | **Baseline** | **2024** | **0%** (0/3 trials) |
 
 **What happens at baseline (2024):**
-- Agent searches for flights, finds nonstop option HAT041
-- User willing to pay up to $100 difference, but fare difference is $234
-- Agent immediately transfers to human agent instead of negotiating or exploring alternatives
-- Task fails because no reservation update was made
+```
+Agent recognizes the situation:
+  "I understand you'd like to upgrade to economy so you can modify your flight..."
+Agent searches for nonstop flights, finds HAT041
+Agent then: transfer_to_human_agents  ← Gives up without trying!
+Task FAILS: No reservation update made
+```
 
 **What happens at other offsets:**
-- Agent explores options more thoroughly
-- Successfully completes the flight change
-- 100% pass rate across all 14 non-baseline offsets
+```
+Agent finds the policy-compliant workaround:
+  "I can upgrade your cabin from basic economy to economy,
+   and then change your flights to a nonstop option..."
+Agent calls: update_reservation_flights(cabin='economy', flights=[HAT041])
+Task PASSES: Upgrade + flight change in one action
+```
+
+**Key insight**: The baseline agent *knows* the workaround exists (it mentions upgrading) but doesn't execute it. The offset agents actually *do* it. Same knowledge, different action-taking behavior.
 
 </details>
 
