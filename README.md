@@ -231,7 +231,7 @@ At the -100 year offset (1924), the agent produces temporally confused statement
 
 This quote shows the model mixing 2024 and 1924 dates in the same sentence—an impossible temporal relationship. The agent's internal understanding of "now" (circa 2024) leaks through even when the simulated time is 1924.
 
-**Caveat:** Investigation revealed that ~50% of observed temporal confusion was caused by a tool schema bug—example dates in docstrings (e.g., `"such as '2024-01-01'"`) weren't transformed to match the offset year. After fixing this, temporal confusion was reduced by half, but the remaining instances represent genuine model behavior. The performance differences (Pass^3) were unaffected by this fix.
+**Caveat:** Investigation revealed that ~50% of observed temporal confusion stemmed from example dates in tool schema docstrings (e.g., `"such as '2024-01-01'"`) that weren't transformed to match the offset year. After fixing this, temporal confusion was reduced by half, but the remaining instances represent genuine model behavior. The performance differences (Pass^3) were unaffected by this fix.
 
 **Behavioral patterns:**
 - At baseline (2024): Agent uses more explicit temporal grounding ("The current date is May 15, 2024") and shorter conversations
