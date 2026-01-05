@@ -158,7 +158,7 @@ def generate_time_ablation_plot(
         color="darkred",
         linewidth=2.5,
         markersize=10,
-        label="Pass^3 (%)",
+        label="Pass^5 (%)",
         zorder=5,
     )
 
@@ -180,8 +180,8 @@ def generate_time_ablation_plot(
     ax.set_xlabel("Time Offset", fontsize=11)
     ax.set_ylabel("Score (%)", fontsize=11)
     ax.set_title(
-        "Time Ablation: Pass^3 and Per-Trial Average Scores\n"
-        "(Claude Sonnet 4.5, 3 trials, 50 tasks, airline domain)",
+        "Time Ablation: Pass^5 and Per-Trial Average Scores\n"
+        "(Claude Sonnet 4.5, 5 trials, 50 tasks, airline domain)",
         fontsize=13,
     )
 
@@ -356,15 +356,15 @@ def generate_task_heatmap(
     ax.set_ylabel("Date Offset", fontsize=11)
     ax.set_xlabel("Task ID (sorted by baseline performance →)", fontsize=11)
     ax.set_title(
-        "Task Pass Rate Heatmap by Date Offset  (Green=3/3 pass, Yellow=partial, Red=0/3 pass)",
+        "Task Pass Rate Heatmap by Date Offset  (Green=5/5 pass, Yellow=partial, Red=0/5 pass)",
         fontsize=12,
     )
 
     # Add colorbar
     cbar = plt.colorbar(im, ax=ax, shrink=0.8, orientation="vertical")
     cbar.set_label("Pass Rate", fontsize=10)
-    cbar.set_ticks([0, 0.33, 0.67, 1.0])
-    cbar.set_ticklabels(["0/3", "1/3", "2/3", "3/3"])
+    cbar.set_ticks([0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    cbar.set_ticklabels(["0/5", "1/5", "2/5", "3/5", "4/5", "5/5"])
 
     # Highlight baseline row
     if 0 in offsets:

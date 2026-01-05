@@ -13,12 +13,13 @@ We hypothesize that models may exhibit different levels of caution or confidence
 
 ## Results
 
-**Yes—and the effect is dramatic.** The same agent, same tasks, same policy: just changing "May 15, 2024" to "May 15, 2029" improves Pass^3 from **42% → 60%**.
+**Yes—and the effect is dramatic.** The same agent, same tasks, same policy: just changing "May 15, 2024" to "May 15, 2029" improves Pass^5 from **34% → 56%**.
 
 - **Baseline (2024) is the worst performer** across all 15 offsets tested, from 1924 to 2124
-- **Behavioral shift**: Baseline makes 19% fewer tool calls and 14% shorter conversations
+- **Statistically significant**: 2 offsets reach p<0.05, 10 reach p<0.10 vs baseline (per-trial analysis, n=250)
+- **Behavioral shift**: Baseline makes ~15% fewer tool calls and shorter conversations
 - **Not just caution**: On some tasks, baseline is *too aggressive* (violating policy), while on others it's *too passive* (abandoning early)
-- **One task (Task 32)** passes 100% at every offset except baseline, where it fails 100%
+- **One task (Task 32)** passes 100% at every offset except baseline, where it fails 100% (5/5 trials)
 
 The temporal context of dates fundamentally changes how the model approaches identical problems.
 
@@ -42,38 +43,38 @@ The temporal context of dates fundamentally changes how the model approaches ide
 
 The airline domain includes:
 - **50 tasks** covering flight changes, cancellations, booking modifications, baggage updates, and policy edge cases
-- **3 trials per task** (150 simulations per offset)
-- **Pass^3 metric**: Percentage of tasks where all 3 trials succeed (reward ≥ 1.0)
+- **5 trials per task** (250 simulations per offset)
+- **Pass^5 metric**: Percentage of tasks where all 5 trials succeed (reward ≥ 1.0)
 
 ## Performance & Behavioral Analysis
 
 **The baseline (original 2024 dates) shows the WORST performance across all 15 time offsets tested.**
 
-| Offset | Year | Pass^3 | Avg Reward | Tool Calls/Task | Conv Length |
-|--------|------|--------|------------|-----------------|-------------|
-| -36500d | 1924 | 50% | 0.620 | 8.5 | 30.0 |
-| -3650d | 2014 | 50% | 0.640 | 8.5 | 29.7 |
-| -1825d | 2019 | 54% | 0.660 | 8.7 | 29.9 |
-| -1460d | 2020 | 50% | 0.647 | 8.4 | 29.8 |
-| -1095d | 2021 | 46% | 0.627 | 8.5 | 30.5 |
-| -730d | 2022 | **58%** | 0.687 | 8.4 | 29.6 |
-| -365d | 2023 | 50% | 0.647 | 8.4 | 29.4 |
-| **0d** | **2024 (baseline)** | **42%** | **0.560** | **6.9** | **25.6** |
-| +365d | 2025 | 48% | 0.620 | 7.9 | 28.4 |
-| +730d | 2026 | 52% | 0.640 | 8.4 | 30.1 |
-| +1095d | 2027 | 48% | 0.627 | 8.8 | 29.9 |
-| +1460d | 2028 | 46% | 0.620 | 8.3 | 29.3 |
-| +1825d | 2029 | **60%** | **0.693** | 8.3 | 28.7 |
-| +3650d | 2034 | 54% | 0.667 | 8.2 | 28.9 |
-| +36500d | 2124 | 48% | 0.633 | 8.7 | 30.3 |
+| Offset | Year | Pass^5 | Avg Reward | p-value |
+|--------|------|--------|------------|---------|
+| -36500d | 1924 | 44% | 0.676 | 0.026** |
+| -3650d | 2014 | 40% | 0.664 | 0.053* |
+| -1825d | 2019 | **48%** | 0.656 | 0.080* |
+| -1460d | 2020 | 44% | 0.656 | 0.080* |
+| -1095d | 2021 | 42% | 0.652 | 0.098* |
+| -730d | 2022 | **48%** | 0.644 | 0.137 |
+| -365d | 2023 | 46% | 0.628 | 0.268 |
+| **0d** | **2024 (baseline)** | **34%** | **0.580** | — |
+| +365d | 2025 | 38% | 0.648 | 0.137 |
+| +730d | 2026 | 46% | 0.664 | 0.053* |
+| +1095d | 2027 | 42% | 0.656 | 0.080* |
+| +1460d | 2028 | **48%** | 0.656 | 0.080* |
+| +1825d | 2029 | **56%** | **0.696** | 0.007** |
+| +3650d | 2034 | 44% | 0.660 | 0.065* |
+| +36500d | 2124 | 46% | 0.648 | 0.137 |
 
-*Model: Claude Sonnet 4.5, 3 trials, 50 tasks, airline domain*
+*Model: Claude Sonnet 4.5, 5 trials, 50 tasks, airline domain. p-values from two-proportion z-test vs baseline (per-trial pass rate).*
 
 **Key observations:**
-- Baseline (2024) is the absolute worst at **42% Pass^3**
-- Best performers: **+5 years (2029) at 60%** and **-2 years (2022) at 58%**
-- Even extreme offsets (-100yr, +100yr) outperform baseline by 6-8 percentage points
-- Baseline makes **~19% fewer tool calls** (6.9 vs 8.4 avg) and **~14% shorter conversations** (25.6 vs 29.6 avg)
+- Baseline (2024) is the absolute worst at **34% Pass^5** (58% per-trial)
+- Best performers: **+5 years (2029) at 56%** and **-5/-2/+4 years at 48%**
+- Statistical significance: **2 offsets at p<0.05** (-100yr, +5yr), **10 at p<0.10**
+- Even extreme offsets (-100yr, +100yr) outperform baseline by 10-12 percentage points
 
 ## Case Studies
 
@@ -84,8 +85,8 @@ This task shows the most dramatic offset effect. The user has a **basic economy*
 
 | Offset | Year | Pass Rate |
 |--------|------|-----------|
-| All non-baseline | 1924-2124 | **100%** (3/3 trials) |
-| **Baseline** | **2024** | **0%** (0/3 trials) |
+| All non-baseline | 1924-2124 | **100%** (5/5 trials each) |
+| **Baseline** | **2024** | **0%** (0/5 trials) |
 
 **What happens at baseline (2024):**
 ```
@@ -110,16 +111,16 @@ Task PASSES: Upgrade + flight change in one action
 </details>
 
 <details>
-<summary><strong>Task 43: Cancellation Handling (0% baseline, 67% average elsewhere)</strong></summary>
+<summary><strong>Task 43: Cancellation Handling (40% baseline, 77% average elsewhere)</strong></summary>
 
 Tests agent's ability to correctly **refuse** a cancellation that violates policy. User has two flights on May 17 and wants to cancel one.
 
 | Offset | Pass Rate | Agent Behavior |
 |--------|-----------|----------------|
-| +1825d (2029) | 100% | Correctly refuses to cancel |
-| -730d (2022) | 100% | Correctly refuses to cancel |
-| -3650d (2014) | 100% | Correctly refuses to cancel |
-| **0d (baseline)** | **0%** | **Incorrectly cancels reservation** |
+| +1825d (2029) | 100% (5/5) | Correctly refuses to cancel |
+| -1825d (2019) | 100% (5/5) | Correctly refuses to cancel |
+| +1095d (2027) | 100% (5/5) | Correctly refuses to cancel |
+| **0d (baseline)** | **40% (2/5)** | **Often incorrectly cancels reservation** |
 
 **What happens at baseline (2024):**
 ```
@@ -141,16 +142,16 @@ Task passes: Correctly followed policy
 </details>
 
 <details>
-<summary><strong>Task 21: Baseline Outperforms (100% baseline, 11% average elsewhere)</strong></summary>
+<summary><strong>Task 21: Baseline Outperforms (80% baseline, 7% average elsewhere)</strong></summary>
 
 Complex multi-step task: change return flights to fastest same-day option, stay in economy, add baggage, use smallest-balance gift card.
 
 | Offset | Pass Rate | Tool Calls | Outcome |
 |--------|-----------|------------|---------|
-| **0d (baseline)** | **100%** | 10-11 | Clean execution |
-| +1825d (2029) | 0% | 14-17 | Repeated failures |
-| -36500d (1924) | 0% | 14-15 | Repeated failures |
-| +36500d (2124) | 0% | 13-17 | Repeated failures |
+| **0d (baseline)** | **80% (4/5)** | 10-11 | Clean execution |
+| +1825d (2029) | 0% (0/5) | 14-17 | Repeated failures |
+| -36500d (1924) | 20% (1/5) | 14-15 | Mostly failures |
+| +36500d (2124) | 20% (1/5) | 13-17 | Mostly failures |
 
 **What happens at baseline (2024):**
 ```
@@ -178,7 +179,7 @@ Task fails: Could not complete the reservation update
 </details>
 
 <details>
-<summary><strong>Task Distribution (50 tasks, 15 offsets)</strong></summary>
+<summary><strong>Task Distribution (50 tasks, 15 offsets, 5 trials)</strong></summary>
 
 ```mermaid
 pie showData
@@ -186,19 +187,19 @@ pie showData
     "Always Pass (all offsets)" : 12
     "Always Fail (all offsets)" : 4
     "Fail Only at Baseline" : 3
-    "Baseline Better" : 3
-    "Mixed Results" : 28
+    "Baseline Better" : 1
+    "Mixed Results" : 30
 ```
 
 | Category | Count | Task IDs |
 |----------|-------|----------|
 | Always Pass | 12 | 3, 4, 6, 10, 13, 19, 28, 31, 34, 40, 46, 48 |
-| Always Fail | 4 | 7, 27, 33, 37 |
-| Fail Only at Baseline | 3 | 32, 35, 43 |
-| Baseline Better | 3 | 21, 26, 47 |
-| Mixed Results | 28 | All others |
+| Always Fail | 4 | 7, 14, 27, 37 |
+| Fail Only at Baseline | 3 | 23, 32, 35 |
+| Baseline Better | 1 | 21 |
+| Mixed Results | 30 | All others |
 
-**Key insight**: 6% of tasks (3/50) fail exclusively at baseline while passing at other offsets. Another 6% show the opposite pattern. The remaining variable tasks show no clear baseline-specific pattern.
+**Key insight**: 6% of tasks (3/50) fail exclusively at baseline while passing at other offsets. Task 32 is the most dramatic: 0% baseline, 100% everywhere else.
 
 </details>
 
@@ -216,7 +217,7 @@ pie showData
 
 *Generate with: `python -m experiments.time_ablation.cli heatmap`*
 
-The heatmap shows pass rate (green=3/3, yellow=partial, red=0/3) for each task across all date offsets. Tasks are sorted by baseline performance. The baseline row (2024) is outlined in black.
+The heatmap shows pass rate (green=5/5, yellow=partial, red=0/5) for each task across all date offsets. Tasks are sorted by baseline performance. The baseline row (2024) is outlined in black.
 
 ## Possible Explanations
 
@@ -231,7 +232,7 @@ At the -100 year offset (1924), the agent produces temporally confused statement
 
 This quote shows the model mixing 2024 and 1924 dates in the same sentence—an impossible temporal relationship. The agent's internal understanding of "now" (circa 2024) leaks through even when the simulated time is 1924.
 
-**Caveat:** Investigation revealed that ~50% of observed temporal confusion stemmed from example dates in tool schema docstrings (e.g., `"such as '2024-01-01'"`) that weren't transformed to match the offset year. After fixing this, temporal confusion was reduced by half, but the remaining instances represent genuine model behavior. The performance differences (Pass^3) were unaffected by this fix.
+**Caveat:** Investigation revealed that ~50% of observed temporal confusion stemmed from example dates in tool schema docstrings (e.g., `"such as '2024-01-01'"`) that weren't transformed to match the offset year. After fixing this, temporal confusion was reduced by half, but the remaining instances represent genuine model behavior. The performance differences (Pass^5) were unaffected by this fix.
 
 **Behavioral patterns:**
 - At baseline (2024): Agent uses more explicit temporal grounding ("The current date is May 15, 2024") and shorter conversations
@@ -280,7 +281,7 @@ python -m experiments.time_ablation.cli generate --offset-days 1825  # +5 years
 # Run experiments
 python -m experiments.time_ablation.cli run \
   --offsets -36500 -3650 -1825 -730 -365 0 365 730 1825 3650 36500 \
-  --num-trials 3 \
+  --num-trials 5 \
   --agent-llm claude-sonnet-4-5-20250929
 
 # Analyze results
