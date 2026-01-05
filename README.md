@@ -6,76 +6,161 @@ This fork of [tau2-bench](https://github.com/sierra-research/tau2-bench) investi
 
 **Do LLMs perform differently on identical tasks when dates are shifted into the past or future?**
 
-We hypothesize that models may exhibit different levels of caution or confidence depending on whether dates appear "real" (close to training data) versus "hypothetical" (far future). This could manifest as:
+We hypothesize that models may exhibit different levels of caution or confidence depending on whether dates appear "real" (close to training data) versus "hypothetical" (far future/past). This could manifest as:
 - More conservative behavior for dates near the model's training cutoff
-- Greater willingness to take actions for clearly hypothetical future dates
+- Greater willingness to take actions for clearly hypothetical dates
 - Different tool-calling patterns based on perceived temporal context
 
 ## Key Finding
 
-**The baseline (original 2024 dates) shows the WORST performance.**
+**The baseline (original 2024 dates) shows the WORST performance across all 15 time offsets tested.**
 
-| Offset | Simulated Year | Pass^3 | Avg Reward |
-|--------|----------------|--------|------------|
-| -1825d | 2019           | 54%    | 0.660      |
-| -730d  | 2022           | 58%    | 0.687      |
-| -365d  | 2023           | 50%    | 0.647      |
-| **0d (baseline)** | **2024** | **42%** | **0.560** |
-| +365d  | 2025           | 48%    | 0.620      |
-| +730d  | 2026           | 52%    | 0.640      |
-| +1825d | 2029           | **60%** | **0.693** |
+| Offset | Year | Pass^3 | Avg Reward |
+|--------|------|--------|------------|
+| -36500d | 1924 | 50% | 0.620 |
+| -3650d | 2014 | 50% | 0.640 |
+| -1825d | 2019 | 54% | 0.660 |
+| -1460d | 2020 | 50% | 0.647 |
+| -1095d | 2021 | 46% | 0.627 |
+| -730d | 2022 | **58%** | 0.687 |
+| -365d | 2023 | 50% | 0.647 |
+| **0d** | **2024 (baseline)** | **42%** | **0.560** |
+| +365d | 2025 | 48% | 0.620 |
+| +730d | 2026 | 52% | 0.640 |
+| +1095d | 2027 | 48% | 0.627 |
+| +1460d | 2028 | 46% | 0.620 |
+| +1825d | 2029 | **60%** | **0.693** |
+| +3650d | 2034 | 54% | 0.667 |
+| +36500d | 2124 | 48% | 0.633 |
 
 *Model: Claude Sonnet 4.5, 3 trials, 50 tasks, airline domain*
 
+**Key observations:**
+- Baseline (2024) is the absolute worst at **42% Pass^3**
+- Best performers: **+5 years (2029) at 60%** and **-2 years (2022) at 58%**
+- Even extreme offsets (-100yr, +100yr) outperform baseline by 6-8 percentage points
+- No monotonic relationship between offset magnitude and performance
+
 ## Behavioral Analysis
 
-The baseline agent is **more conservative** than agents operating on shifted dates:
+The baseline agent is **significantly more conservative** than agents operating on shifted dates:
 
 | Offset | Year | Tool Calls/Task | Conv Length |
 |--------|------|-----------------|-------------|
-| -1825d | 2019 | 8.7             | 29.9        |
-| -730d  | 2022 | 8.4             | 29.6        |
-| -365d  | 2023 | 8.4             | 29.4        |
-| **0d** | **2024** | **6.9**     | **25.6**    |
-| +365d  | 2025 | 7.9             | 28.4        |
-| +730d  | 2026 | 8.4             | 30.1        |
-| +1825d | 2029 | 8.3             | 28.7        |
+| -36500d | 1924 | 8.5 | 30.0 |
+| -3650d | 2014 | 8.5 | 29.7 |
+| -1825d | 2019 | 8.7 | 29.9 |
+| -1460d | 2020 | 8.4 | 29.8 |
+| -1095d | 2021 | 8.5 | 30.5 |
+| -730d | 2022 | 8.4 | 29.6 |
+| -365d | 2023 | 8.4 | 29.4 |
+| **0d** | **2024 (baseline)** | **6.9** | **25.6** |
+| +365d | 2025 | 7.9 | 28.4 |
+| +730d | 2026 | 8.4 | 30.1 |
+| +1095d | 2027 | 8.8 | 29.9 |
+| +1460d | 2028 | 8.3 | 29.3 |
+| +1825d | 2029 | 8.3 | 28.7 |
+| +3650d | 2034 | 8.2 | 28.9 |
+| +36500d | 2124 | 8.7 | 30.3 |
 
-The baseline model makes **~20% fewer tool calls** and produces **~15% shorter conversations** than other offsets, suggesting earlier task abandonment.
+The baseline model makes **~19% fewer tool calls** (6.9 vs 8.4 avg) and produces **~14% shorter conversations** (25.6 vs 29.6 avg) than other offsets, suggesting earlier task abandonment or more conservative decision-making.
 
-## Case Study: Task 32 (Flight Change)
+## Case Studies
 
-**Baseline (2024):** 0/3 trials passed
-- Agent searched for flights, found options, then immediately transferred to human
-- Did not attempt `update_reservation_flights`
+### Task 32: The Smoking Gun (0% baseline, 100% everywhere else)
 
-**+5 Years (2029):** 3/3 trials passed
-- Agent searched for flights, found options, and executed `update_reservation_flights`
-- Successfully completed the reservation change
+This task shows the most dramatic offset effect. The user needs to change a flight from Newark to a nonstop option due to a family emergency.
 
-The same task, same model, same policy - different outcomes based purely on date context.
+| Offset | Year | Pass Rate |
+|--------|------|-----------|
+| All non-baseline | 1924-2124 | **100%** (3/3 trials) |
+| **Baseline** | **2024** | **0%** (0/3 trials) |
 
-## Task Distribution (50 tasks, 7 offsets)
+**What happens at baseline (2024):**
+- Agent searches for flights, finds nonstop option HAT041
+- User willing to pay up to $100 difference, but fare difference is $234
+- Agent immediately transfers to human agent instead of negotiating or exploring alternatives
+- Task fails because no reservation update was made
+
+**What happens at other offsets:**
+- Agent explores options more thoroughly
+- Successfully completes the flight change
+- 100% pass rate across all 14 non-baseline offsets
+
+### Task 43: Cancellation Handling (0% baseline, 67% average elsewhere)
+
+Tests agent's ability to correctly identify which flights can be canceled per policy.
+
+| Offset | Pass Rate |
+|--------|-----------|
+| -3650d (2014) | 100% |
+| -730d (2022) | 100% |
+| +730d (2026) | 100% |
+| +1825d (2029) | 100% |
+| **0d (baseline)** | **0%** |
+
+### Task 21: Baseline Outperforms (100% baseline, 11% average elsewhere)
+
+Interestingly, a few tasks show the opposite pattern where baseline performs better:
+
+| Offset | Pass Rate |
+|--------|-----------|
+| **0d (baseline)** | **100%** |
+| -36500d (1924) | 0% |
+| +36500d (2124) | 0% |
+| Average (non-baseline) | 11% |
+
+This task involves complex multi-step flight changes. The baseline agent's more decisive behavior may help avoid getting stuck in exploration loops.
+
+## Task Distribution (50 tasks, 15 offsets)
 
 ```mermaid
 pie showData
     title Task Outcomes Across Date Offsets
-    "Always Pass (all offsets)" : 14
-    "Always Fail (all offsets)" : 13
-    "Date-Sensitive (pass +5y, fail baseline)" : 10
-    "Mixed Results" : 12
-    "Pass Only Baseline" : 1
+    "Always Pass (all offsets)" : 12
+    "Always Fail (all offsets)" : 4
+    "Fail Only at Baseline" : 3
+    "Baseline Better" : 3
+    "Mixed Results" : 28
 ```
 
-**Key insight**: 20% of tasks (10/50) pass when dates are shifted to +5 years but fail at baseline - these are the **date-sensitive** tasks that demonstrate the temporal bias effect.
+| Category | Count | Task IDs |
+|----------|-------|----------|
+| Always Pass | 12 | 3, 4, 6, 10, 13, 19, 28, 31, 34, 40, 46, 48 |
+| Always Fail | 4 | 7, 27, 33, 37 |
+| Fail Only at Baseline | 3 | 32, 35, 43 |
+| Baseline Better | 3 | 21, 26, 47 |
+| Mixed Results | 28 | All others |
+
+**Key insight**: 6% of tasks (3/50) fail exclusively at baseline while passing at other offsets. Another 6% show the opposite pattern. The remaining variable tasks show no clear baseline-specific pattern.
+
+## Visualizations
+
+### Performance Plot
+
+![Time Ablation Results](https://raw.githubusercontent.com/sshh12/tau2-bench-time-ablations/refs/heads/main/time_ablation_plot.png)
+
+*Generate with: `python -m experiments.time_ablation.cli plot`*
 
 ### Task Heatmap
 
-![Task Heatmap](time_ablation_heatmap.png)
+![Task Heatmap](https://raw.githubusercontent.com/sshh12/tau2-bench-time-ablations/refs/heads/main/time_ablation_heatmap.png)
 
 *Generate with: `python -m experiments.time_ablation.cli heatmap`*
 
-The heatmap shows pass rate (green=3/3, yellow=partial, red=0/3) for each task across all date offsets. Tasks are sorted by baseline performance. The baseline column (2024) is outlined in black - notice the increased red/yellow compared to other columns.
+The heatmap shows pass rate (green=3/3, yellow=partial, red=0/3) for each task across all date offsets. Tasks are sorted by baseline performance. The baseline row (2024) is outlined in black.
+
+## Possible Explanations
+
+1. **Training data boundary effect**: The model may be more cautious with 2024 dates because they fall near or within its training data, triggering uncertainty about "real" events it might have seen.
+
+2. **Hypothetical framing**: Clearly past (1924) or future (2124) dates may trigger "hypothetical scenario" reasoning, reducing hesitation and encouraging more exploratory behavior.
+
+3. **Confidence calibration**: The model may perceive lower stakes for clearly fictional dates, leading to more decisive action-taking.
+
+4. **Temporal anchoring**: Dates matching the model's "present" understanding may activate different reasoning patterns than dates that are obviously displaced.
+
+5. **Risk aversion asymmetry**: The model might be specifically trained to be cautious about actions in the "present" timeframe to avoid real-world mistakes.
 
 ## Running Experiments
 
@@ -90,38 +175,46 @@ python -m experiments.time_ablation.cli generate --offset-days 1825  # +5 years
 
 # Run experiments
 python -m experiments.time_ablation.cli run \
-  --offsets -1825 -730 -365 0 365 730 1825 \
+  --offsets -36500 -3650 -1825 -730 -365 0 365 730 1825 3650 36500 \
   --num-trials 3 \
   --agent-llm claude-sonnet-4-5-20250929
 
 # Analyze results
 python -m experiments.time_ablation.cli analyze
+
+# Generate plots
+python -m experiments.time_ablation.cli plot
+python -m experiments.time_ablation.cli heatmap
 ```
-
-## Possible Explanations
-
-1. **Training data bias**: Model more cautious with 2024 dates due to proximity to real events in training data
-2. **Hypothetical framing effect**: Far-future dates trigger "hypothetical scenario" reasoning, reducing hesitation
-3. **Confidence calibration**: Model may perceive lower stakes for clearly fictional future dates
 
 ## Repository Structure
 
 ```
 src/experiments/time_ablation/   # Experiment infrastructure
   cli.py                         # Command-line interface
-  date_transformer.py            # Date transformation logic
+  generate_dataset.py            # Date transformation logic
   run_ablation.py                # Experiment runner
   analyze.py                     # Results analysis
+  plot.py                        # Visualization
 
-data/tau2/domains/               # Generated offset domains
+data/tau2/domains/               # Generated offset domains (15 total)
+  airline/                       # Original baseline (2024)
+  airline_offset_n36500d/        # -100 years (1924)
+  airline_offset_n3650d/         # -10 years (2014)
   airline_offset_n1825d/         # -5 years (2019)
+  airline_offset_n1460d/         # -4 years (2020)
+  airline_offset_n1095d/         # -3 years (2021)
   airline_offset_n730d/          # -2 years (2022)
   airline_offset_n365d/          # -1 year (2023)
   airline_offset_p365d/          # +1 year (2025)
   airline_offset_p730d/          # +2 years (2026)
+  airline_offset_p1095d/         # +3 years (2027)
+  airline_offset_p1460d/         # +4 years (2028)
   airline_offset_p1825d/         # +5 years (2029)
+  airline_offset_p3650d/         # +10 years (2034)
+  airline_offset_p36500d/        # +100 years (2124)
 
-data/simulations/time_ablation/  # Experiment results (7 offsets)
+data/simulations/time_ablation/  # Experiment results (15 offsets)
 ```
 
 ## Main Repository
