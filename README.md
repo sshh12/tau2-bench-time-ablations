@@ -11,6 +11,17 @@ We hypothesize that models may exhibit different levels of caution or confidence
 - Greater willingness to take actions for clearly hypothetical dates
 - Different tool-calling patterns based on perceived temporal context
 
+## Results
+
+**Yes—and the effect is dramatic.** The same agent, same tasks, same policy: just changing "May 15, 2024" to "May 15, 2029" improves Pass^3 from **42% → 60%**.
+
+- **Baseline (2024) is the worst performer** across all 15 offsets tested, from 1924 to 2124
+- **Behavioral shift**: Baseline makes 19% fewer tool calls and 14% shorter conversations
+- **Not just caution**: On some tasks, baseline is *too aggressive* (violating policy), while on others it's *too passive* (abandoning early)
+- **One task (Task 32)** passes 100% at every offset except baseline, where it fails 100%
+
+The temporal context of dates fundamentally changes how the model approaches identical problems.
+
 ## Experimental Setup
 
 ### Framework
