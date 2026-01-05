@@ -244,6 +244,25 @@ try:
         get_task_splits=telecom_domain_get_tasks_split,
     )
 
+    # Dynamically register offset domains
+    import importlib
+    from pathlib import Path
+    domains_dir = Path(__file__).parent / "domains"
+    for domain_path in domains_dir.iterdir():
+        if domain_path.is_dir() and domain_path.name.startswith("airline_offset_"):
+            domain_name = domain_path.name
+            try:
+                env_module = importlib.import_module(f"tau2.domains.{domain_name}.environment")
+                registry.register_domain(env_module.get_environment, domain_name)
+                registry.register_tasks(
+                    env_module.get_tasks,
+                    domain_name,
+                    get_task_splits=env_module.get_tasks_split,
+                )
+                logger.debug(f"Registered offset domain: {domain_name}")
+            except Exception as e:
+                logger.warning(f"Failed to register offset domain {domain_name}: {e}")
+
     logger.debug(
         f"Default components registered successfully. Registry info: {json.dumps(registry.get_info().model_dump(), indent=2)}"
     )

@@ -1,6 +1,7 @@
 """Toolkit for the airline reservation system."""
 
 from copy import deepcopy
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from loguru import logger
@@ -468,11 +469,12 @@ class AirlineTools(ToolKitBase):  # Tools
             date=date, origin=origin, destination=None
         ):
             result1.date = date
-            date2 = (
-                f"2024-05-{int(date[-2:]) + 1}"
-                if "+1" in result1.scheduled_arrival_time_est
-                else date
-            )
+            # Handle overnight flights (arrival time has +1 indicating next day)
+            if "+1" in result1.scheduled_arrival_time_est:
+                parsed = datetime.strptime(date, "%Y-%m-%d")
+                date2 = (parsed + timedelta(days=1)).strftime("%Y-%m-%d")
+            else:
+                date2 = date
             # TODO: flight1.scheduled_arrival_time_est could have a +1?
             for result2 in self._search_direct_flight(
                 date=date2,
