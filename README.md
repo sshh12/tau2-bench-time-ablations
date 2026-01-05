@@ -120,7 +120,8 @@ The baseline model makes **~19% fewer tool calls** (6.9 vs 8.4 avg) and produces
 
 ## Case Studies
 
-### Task 32: The Smoking Gun (0% baseline, 100% everywhere else)
+<details>
+<summary><strong>Task 32: The Smoking Gun (0% baseline, 100% everywhere else)</strong></summary>
 
 This task shows the most dramatic offset effect. The user needs to change a flight from Newark to a nonstop option due to a family emergency.
 
@@ -140,7 +141,10 @@ This task shows the most dramatic offset effect. The user needs to change a flig
 - Successfully completes the flight change
 - 100% pass rate across all 14 non-baseline offsets
 
-### Task 43: Cancellation Handling (0% baseline, 67% average elsewhere)
+</details>
+
+<details>
+<summary><strong>Task 43: Cancellation Handling (0% baseline, 67% average elsewhere)</strong></summary>
 
 Tests agent's ability to correctly **refuse** a cancellation that violates policy. User has two flights on May 17 and wants to cancel one.
 
@@ -168,7 +172,10 @@ Task passes: Correctly followed policy
 
 **Insight**: The baseline agent is **more willing to take action** (cancel) even when it violates policy. Offset agents are more cautious and correctly refuse. This contradicts the "conservative baseline" hypothesis for this specific task type.
 
-### Task 21: Baseline Outperforms (100% baseline, 11% average elsewhere)
+</details>
+
+<details>
+<summary><strong>Task 21: Baseline Outperforms (100% baseline, 11% average elsewhere)</strong></summary>
 
 Complex multi-step task: change return flights to fastest same-day option, stay in economy, add baggage, use smallest-balance gift card.
 
@@ -202,7 +209,10 @@ Task fails: Could not complete the reservation update
 2. Potential tool/data inconsistencies in generated offset domains
 3. The baseline's shorter conversations may actually reflect more efficient execution, not early abandonment
 
-## Task Distribution (50 tasks, 15 offsets)
+</details>
+
+<details>
+<summary><strong>Task Distribution (50 tasks, 15 offsets)</strong></summary>
 
 ```mermaid
 pie showData
@@ -223,6 +233,8 @@ pie showData
 | Mixed Results | 28 | All others |
 
 **Key insight**: 6% of tasks (3/50) fail exclusively at baseline while passing at other offsets. Another 6% show the opposite pattern. The remaining variable tasks show no clear baseline-specific pattern.
+
+</details>
 
 ## Visualizations
 
