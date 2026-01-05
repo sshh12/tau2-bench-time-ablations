@@ -35,70 +35,81 @@ def generate_time_ablation_plot(
 
     # Collect data from results
     results = []
-    for offset_dir in results_dir.iterdir():
-        if not offset_dir.is_dir():
-            continue
 
-        # Parse offset from dirname
-        dirname = offset_dir.name
-        if not dirname.startswith("offset_"):
-            continue
-
-        offset_str = dirname.replace("offset_", "")
+    def parse_offset(name: str) -> Optional[int]:
+        """Parse offset from directory or file name like offset_p365d or offset_n1095d.json"""
+        name = name.replace(".json", "")
+        if not name.startswith("offset_"):
+            return None
+        offset_str = name.replace("offset_", "")
         if offset_str.startswith("p"):
-            offset = int(offset_str[1:-1])
+            return int(offset_str[1:-1])
         elif offset_str.startswith("n"):
-            offset = -int(offset_str[1:-1])
-        else:
-            continue
+            return -int(offset_str[1:-1])
+        return None
 
-        # Load results from JSON files
-        for json_file in offset_dir.glob("*.json"):
-            try:
-                with open(json_file) as f:
-                    data = json.load(f)
+    def process_json_file(json_file: Path, offset: int) -> None:
+        """Process a single JSON results file."""
+        try:
+            with open(json_file) as f:
+                data = json.load(f)
 
-                # Group simulations by task and trial
-                task_results = defaultdict(list)
-                trial_rewards = defaultdict(list)
+            # Group simulations by task and trial
+            task_results = defaultdict(list)
+            trial_rewards = defaultdict(list)
 
-                for sim in data["simulations"]:
-                    task_id = sim["task_id"]
-                    trial = sim["trial"]
-                    reward = sim["reward_info"]["reward"]
-                    task_results[task_id].append(reward)
-                    trial_rewards[trial].append(reward)
+            for sim in data["simulations"]:
+                task_id = sim["task_id"]
+                trial = sim["trial"]
+                reward = sim["reward_info"]["reward"]
+                task_results[task_id].append(reward)
+                trial_rewards[trial].append(reward)
 
-                num_tasks = len(task_results)
-                if num_tasks == 0:
-                    continue
+            num_tasks = len(task_results)
+            if num_tasks == 0:
+                return
 
-                # Pass^3: all trials pass for a task
-                pass_k = (
-                    sum(
-                        1
-                        for rewards in task_results.values()
-                        if all(r >= 1.0 for r in rewards)
-                    )
-                    / num_tasks
-                    * 100
+            # Pass^3: all trials pass for a task
+            pass_k = (
+                sum(
+                    1
+                    for rewards in task_results.values()
+                    if all(r >= 1.0 for r in rewards)
                 )
+                / num_tasks
+                * 100
+            )
 
-                # Average reward per trial
-                trial_avg_rewards = [
-                    sum(trial_rewards[t]) / len(trial_rewards[t]) * 100
-                    for t in sorted(trial_rewards.keys())
-                ]
+            # Average reward per trial
+            trial_avg_rewards = [
+                sum(trial_rewards[t]) / len(trial_rewards[t]) * 100
+                for t in sorted(trial_rewards.keys())
+            ]
 
-                results.append(
-                    {
-                        "offset": offset,
-                        "pass_k": pass_k,
-                        "trial_avg_rewards": trial_avg_rewards,
-                    }
-                )
-            except Exception as e:
-                logger.warning(f"Failed to load {json_file}: {e}")
+            results.append(
+                {
+                    "offset": offset,
+                    "pass_k": pass_k,
+                    "trial_avg_rewards": trial_avg_rewards,
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Failed to load {json_file}: {e}")
+
+    for item in results_dir.iterdir():
+        if item.is_dir():
+            # Handle directory with JSON files inside
+            offset = parse_offset(item.name)
+            if offset is None:
+                continue
+            for json_file in item.glob("*.json"):
+                process_json_file(json_file, offset)
+        elif item.is_file() and item.suffix == ".json":
+            # Handle standalone JSON file
+            offset = parse_offset(item.name)
+            if offset is None:
+                continue
+            process_json_file(item, offset)
 
     if not results:
         raise ValueError(f"No results found in {results_dir}")
@@ -109,16 +120,18 @@ def generate_time_ablation_plot(
     offsets = [r["offset"] for r in results]
     pass_k_values = [r["pass_k"] for r in results]
 
-    # Create figure
-    fig, ax = plt.subplots(figsize=(12, 6))
+    # Use sequential x-positions for even spacing (avoids extreme scale issues)
+    x_positions = list(range(len(offsets)))
+
+    # Create figure (wider for more offsets)
+    fig, ax = plt.subplots(figsize=(16, 7))
 
     # Plot individual trial scores - small, subtle
-    for r in results:
-        offset = r["offset"]
+    for i, r in enumerate(results):
         for trial_idx, avg in enumerate(r["trial_avg_rewards"]):
-            jitter = (trial_idx - 1) * 30
+            jitter = (trial_idx - 1) * 0.15
             ax.scatter(
-                offset + jitter, avg, alpha=0.5, s=40, c="steelblue", zorder=3
+                x_positions[i] + jitter, avg, alpha=0.5, s=40, c="steelblue", zorder=3
             )
 
     # Add one label for legend
@@ -126,7 +139,7 @@ def generate_time_ablation_plot(
 
     # Plot Pass^3 line
     ax.plot(
-        offsets,
+        x_positions,
         pass_k_values,
         "o-",
         color="darkred",
@@ -139,9 +152,9 @@ def generate_time_ablation_plot(
     # Mark baseline if present
     if 0 in offsets:
         baseline_idx = offsets.index(0)
-        ax.axvline(x=0, color="gray", linestyle="--", alpha=0.4)
+        ax.axvline(x=x_positions[baseline_idx], color="gray", linestyle="--", alpha=0.4)
         ax.scatter(
-            [0],
+            [x_positions[baseline_idx]],
             [pass_k_values[baseline_idx]],
             color="darkred",
             s=180,
@@ -151,7 +164,7 @@ def generate_time_ablation_plot(
         )
 
     # Labels
-    ax.set_xlabel("Offset (days)", fontsize=11)
+    ax.set_xlabel("Time Offset", fontsize=11)
     ax.set_ylabel("Score (%)", fontsize=11)
     ax.set_title(
         "Time Ablation: Pass^3 and Per-Trial Average Scores\n"
@@ -161,16 +174,24 @@ def generate_time_ablation_plot(
 
     # X-axis labels with years
     year_labels = {
+        -36500: "1924\n(-100y)",
+        -3650: "2014\n(-10y)",
         -1825: "2019\n(-5y)",
+        -1460: "2020\n(-4y)",
+        -1095: "2021\n(-3y)",
         -730: "2022\n(-2y)",
         -365: "2023\n(-1y)",
         0: "2024\n(baseline)",
         365: "2025\n(+1y)",
         730: "2026\n(+2y)",
+        1095: "2027\n(+3y)",
+        1460: "2028\n(+4y)",
         1825: "2029\n(+5y)",
+        3650: "2034\n(+10y)",
+        36500: "2124\n(+100y)",
     }
-    ax.set_xticks(offsets)
-    ax.set_xticklabels([year_labels.get(o, str(o)) for o in offsets])
+    ax.set_xticks(x_positions)
+    ax.set_xticklabels([year_labels.get(o, str(o)) for o in offsets], fontsize=9, rotation=45, ha="right")
 
     # Set y-axis limits with some padding
     y_min = min(min(pass_k_values), min(min(r["trial_avg_rewards"]) for r in results))
@@ -216,40 +237,50 @@ def generate_task_heatmap(
     task_data = defaultdict(dict)
     offsets_found = set()
 
-    for offset_dir in results_dir.iterdir():
-        if not offset_dir.is_dir():
-            continue
-
-        dirname = offset_dir.name
-        if not dirname.startswith("offset_"):
-            continue
-
-        offset_str = dirname.replace("offset_", "")
+    def parse_offset(name: str) -> Optional[int]:
+        """Parse offset from directory or file name."""
+        name = name.replace(".json", "")
+        if not name.startswith("offset_"):
+            return None
+        offset_str = name.replace("offset_", "")
         if offset_str.startswith("p"):
-            offset = int(offset_str[1:-1])
+            return int(offset_str[1:-1])
         elif offset_str.startswith("n"):
-            offset = -int(offset_str[1:-1])
-        else:
-            continue
+            return -int(offset_str[1:-1])
+        return None
 
-        offsets_found.add(offset)
+    def process_json_file(json_file: Path, offset: int) -> None:
+        """Process a single JSON results file."""
+        try:
+            with open(json_file) as f:
+                data = json.load(f)
 
-        for json_file in offset_dir.glob("*.json"):
-            try:
-                with open(json_file) as f:
-                    data = json.load(f)
+            task_results = defaultdict(list)
+            for sim in data["simulations"]:
+                task_id = sim["task_id"]
+                reward = sim["reward_info"]["reward"]
+                task_results[task_id].append(reward)
 
-                task_results = defaultdict(list)
-                for sim in data["simulations"]:
-                    task_id = sim["task_id"]
-                    reward = sim["reward_info"]["reward"]
-                    task_results[task_id].append(reward)
+            for task_id, rewards in task_results.items():
+                pass_rate = sum(1 for r in rewards if r >= 1.0) / len(rewards)
+                task_data[task_id][offset] = pass_rate
+        except Exception as e:
+            logger.warning(f"Failed to load {json_file}: {e}")
 
-                for task_id, rewards in task_results.items():
-                    pass_rate = sum(1 for r in rewards if r >= 1.0) / len(rewards)
-                    task_data[task_id][offset] = pass_rate
-            except Exception as e:
-                logger.warning(f"Failed to load {json_file}: {e}")
+    for item in results_dir.iterdir():
+        if item.is_dir():
+            offset = parse_offset(item.name)
+            if offset is None:
+                continue
+            offsets_found.add(offset)
+            for json_file in item.glob("*.json"):
+                process_json_file(json_file, offset)
+        elif item.is_file() and item.suffix == ".json":
+            offset = parse_offset(item.name)
+            if offset is None:
+                continue
+            offsets_found.add(offset)
+            process_json_file(item, offset)
 
     if not task_data:
         raise ValueError(f"No results found in {results_dir}")
@@ -277,8 +308,8 @@ def generate_task_heatmap(
     # Transpose for horizontal layout (offsets on y-axis, tasks on x-axis)
     matrix_transposed = matrix_sorted.T
 
-    # Create figure (wide and short)
-    fig, ax = plt.subplots(figsize=(16, 5))
+    # Create figure (wide, taller for more offsets)
+    fig, ax = plt.subplots(figsize=(16, 8))
 
     # Custom colormap: red (fail) -> yellow (partial) -> green (pass)
     colors = ["#d73027", "#fee08b", "#1a9850"]
@@ -288,16 +319,24 @@ def generate_task_heatmap(
 
     # Labels
     year_labels = {
+        -36500: "1924 (-100y)",
+        -3650: "2014 (-10y)",
         -1825: "2019 (-5y)",
+        -1460: "2020 (-4y)",
+        -1095: "2021 (-3y)",
         -730: "2022 (-2y)",
         -365: "2023 (-1y)",
         0: "2024 (base)",
         365: "2025 (+1y)",
         730: "2026 (+2y)",
+        1095: "2027 (+3y)",
+        1460: "2028 (+4y)",
         1825: "2029 (+5y)",
+        3650: "2034 (+10y)",
+        36500: "2124 (+100y)",
     }
     ax.set_yticks(range(len(offsets)))
-    ax.set_yticklabels([year_labels.get(o, str(o)) for o in offsets], fontsize=9)
+    ax.set_yticklabels([year_labels.get(o, str(o)) for o in offsets], fontsize=8)
     ax.set_xticks(range(len(task_ids_sorted)))
     ax.set_xticklabels([f"{tid}" for tid in task_ids_sorted], fontsize=7, rotation=90)
 
