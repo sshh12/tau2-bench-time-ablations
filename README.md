@@ -131,28 +131,65 @@ This task shows the most dramatic offset effect. The user needs to change a flig
 
 ### Task 43: Cancellation Handling (0% baseline, 67% average elsewhere)
 
-Tests agent's ability to correctly identify which flights can be canceled per policy.
+Tests agent's ability to correctly **refuse** a cancellation that violates policy. User has two flights on May 17 and wants to cancel one.
 
-| Offset | Pass Rate |
-|--------|-----------|
-| -3650d (2014) | 100% |
-| -730d (2022) | 100% |
-| +730d (2026) | 100% |
-| +1825d (2029) | 100% |
-| **0d (baseline)** | **0%** |
+| Offset | Pass Rate | Agent Behavior |
+|--------|-----------|----------------|
+| +1825d (2029) | 100% | Correctly refuses to cancel |
+| -730d (2022) | 100% | Correctly refuses to cancel |
+| -3650d (2014) | 100% | Correctly refuses to cancel |
+| **0d (baseline)** | **0%** | **Incorrectly cancels reservation** |
+
+**What happens at baseline (2024):**
+```
+Agent checks reservations: 35V5SM, XXDC1M, V5EMZH, D1EW9B, 9HBUV8, DGZSYX
+Agent calls: cancel_reservation(reservation_id='9HBUV8')  ← WRONG!
+Task fails: Policy prohibits this cancellation
+```
+
+**What happens at other offsets:**
+```
+Agent checks the same reservations
+Agent determines none meet cancellation requirements
+Agent explains policy to user, does NOT cancel
+Task passes: Correctly followed policy
+```
+
+**Insight**: The baseline agent is **more willing to take action** (cancel) even when it violates policy. Offset agents are more cautious and correctly refuse. This contradicts the "conservative baseline" hypothesis for this specific task type.
 
 ### Task 21: Baseline Outperforms (100% baseline, 11% average elsewhere)
 
-Interestingly, a few tasks show the opposite pattern where baseline performs better:
+Complex multi-step task: change return flights to fastest same-day option, stay in economy, add baggage, use smallest-balance gift card.
 
-| Offset | Pass Rate |
-|--------|-----------|
-| **0d (baseline)** | **100%** |
-| -36500d (1924) | 0% |
-| +36500d (2124) | 0% |
-| Average (non-baseline) | 11% |
+| Offset | Pass Rate | Tool Calls | Outcome |
+|--------|-----------|------------|---------|
+| **0d (baseline)** | **100%** | 10-11 | Clean execution |
+| +1825d (2029) | 0% | 14-17 | Repeated failures |
+| -36500d (1924) | 0% | 14-15 | Repeated failures |
+| +36500d (2124) | 0% | 13-17 | Repeated failures |
 
-This task involves complex multi-step flight changes. The baseline agent's more decisive behavior may help avoid getting stuck in exploration loops.
+**What happens at baseline (2024):**
+```
+Agent searches flights for 2024-05-27
+Agent calls: update_reservation_flights(flights=[...dates: 2024-05-27...])
+Agent calls: update_reservation_baggages(...)
+Task passes: Both updates succeed
+```
+
+**What happens at other offsets:**
+```
+Agent searches flights for 2029-05-26 (date shifted)
+Agent calls: update_reservation_flights(flights=[...dates: 2029-05-26...])
+Tool returns: "Error: Flight HAT290 not available on date 2029-05-26"
+Agent retries with different flights... same error
+Agent eventually transfers to human
+Task fails: Could not complete the reservation update
+```
+
+**Insight**: The offset domains encounter "flight not available" errors that don't occur at baseline. This could indicate:
+1. Edge cases in date transformation (leap year handling)
+2. Potential tool/data inconsistencies in generated offset domains
+3. The baseline's shorter conversations may actually reflect more efficient execution, not early abandonment
 
 ## Task Distribution (50 tasks, 15 offsets)
 
